@@ -3,11 +3,10 @@
 import os
 import sys
 import json
-import twitter
-import datetime
-import urllib.request
-import paho.mqtt.client as mqtt
 import time
+import datetime
+import twitter
+import paho.mqtt.client as mqtt
 import light_sensor
 
 from dotenv import load_dotenv
@@ -32,9 +31,10 @@ AUTHORIZED_PERSONNEL = os.environ['AUTHORIZED_PERSONNEL'].split(',')
 COMMAND_HELP_TEXT = '''\
 ITS.isOpen(): check if the room is open by using a light sensor
 checkRateLimit(): check the rate limit status for the current endpoint
-ping(): check if the service is up
-help(): show the available commands and their usage
-quit(): this is only allowed for the core members\
+ping(): return "pong" to tell you the service is up
+help(): show the available commands and the corresponding usage
+stop(): AUTHORIZED PERSONNEL ONLY
+restart(): AUTHORIZED PERSONNEL ONLY\
 '''
 
 api = twitter.Api(
@@ -44,27 +44,38 @@ api = twitter.Api(
         ACCESS_SECRET,
         sleep_on_rate_limit=True)
 
+
 def its_is_open():
     def sampling():
         time.sleep(0.5)
         return light_sensor.isOpen()
 
-    sample = [sampling() for _ in range(9)]
-    print("[*] Light sensor: {}".format(sample))
-    return sample.count(True) > 4
+    samples = [sampling() for _ in range(9)]
+    print("[*] Light sensor: {}".format(samples))
+    return samples.count(True) > 4
 
 
 def post_update(text):
-    status = api.PostUpdate(text)
-    print("[*] Posted update: {}".format(status.text))
-    print("---------------------------")
+    try:
+        status = api.PostUpdate(text)
+    except twitter.error.TwitterError as e:
+        print("[-] PostUpdate error: {}".format(e))
+    else:
+        print("[*] Posted update: {}".format(status.text))
+    finally:
+        print("---------------------------")
     return status
 
 
 def post_dm(username, text):
-    status = api.PostDirectMessage(screen_name=username, text=text)
-    print("[*] Posted DM: {}".format(status.text))
-    print("---------------------------")
+    try:
+        status = api.PostDirectMessage(screen_name=username, text=text)
+    except twitter.error.TwitterError as e:
+        print("[-] PostUpdate error: {}".format(e))
+    else:
+        print("[*] Posted DM: {}".format(status.text))
+    finally:
+        print("---------------------------")
     return status
 
 
@@ -81,7 +92,7 @@ def response_check_rate_limit(username, link, dm):
             if dm else 'https://api.twitter.com/1.1/statuses/update.json')
     rate_limit = api.CheckRateLimit(url)
     response = "limit={} ramaining={} reset={}".format(
-            rate_limit.limit, rate_limit.remaining, rate_limit.reset)
+        rate_limit.limit, rate_limit.remaining, rate_limit.reset)
 
     if dm:
         post_dm(username, "200 {}".format(response))
@@ -103,20 +114,38 @@ def response_help(username, link, dm):
         post_update("@{} 200 usage:\n{} {}".format(username, COMMAND_HELP_TEXT, link))
 
 
-def response_quit(username, link, dm):
+def response_forbidden(username, link, dm):
+    if dm:
+        post_dm(username, "403 Forbidden")
+    else:
+        post_update("@{} 403 Forbidden {}".format(username, link))
+
+
+def response_stop(username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         if dm:
             post_dm(username, "200 Bye (^^)/")
 
-        # it's important to tell everyone the service is quitting
-        post_update("200 Bye (^^)/ [{}] {}".format(username, link))
-        print("[!] Quitting due to a 'quit' command")
+        # it's important to tell everyone the service is stopping
+        post_update("200 Bye (^^)/ [{}] ({}) {}".format(username, datetime.datetime.now(), link))
+        print("[!] Stop due to a 'stop' command")
+
         sys.exit(0)
     else:
+        response_forbidden(username, link, dm)
+
+
+def response_restart(username, link, dm):
+    if username in AUTHORIZED_PERSONNEL:
         if dm:
-            post_dm(username, "403 AUTHORIZED PERSONNEL ONLY")
-        else:
-            post_update("@{} 403 AUTHORIZED PERSONNEL ONLY {}".format(username, link))
+            post_dm(username, "200 Restarting")
+
+        post_update("200 Restarting [{}] ({}) {}".format(username, datetime.datetime.now(), link))
+        print("[!] Restart due to a 'restart' command")
+
+        os.execv("/usr/bin/env", ["/usr/bin/env", "python3"] + sys.argv)
+    else:
+        response_forbidden(username, link, dm)
 
 
 def response_unknown_cmd(username, cmd, link, dm):
@@ -141,14 +170,18 @@ def handle_its_cmd(username, body, link, dm):
 
     if cmd == "ITS.isOpen()":
         response_its_is_open(username, link, dm)
+    elif cmd == "getLoggedInMembers()":
+        response_get_logged_in_members(username, link, dm)
     elif cmd == "checkRateLimit()":
         response_check_rate_limit(username, link, dm)
     elif cmd == "ping()":
         response_ping(username, link, dm)
     elif cmd == "help()":
         response_help(username, link, dm)
-    elif cmd == "quit()":
-        response_quit(username, link, dm)
+    elif cmd == "stop()":
+        response_stop(username, link, dm)
+    elif cmd == "restart()":
+        response_restart(username, link, dm)
     else:
         response_unknown_cmd(username, cmd, link, dm)
 
@@ -157,13 +190,18 @@ def handle_tweet_create_events(event):
     for tce in event['tweet_create_events']:
         if tce['in_reply_to_screen_name'] == SCREEN_NAME:
             username = tce['user']['screen_name']
+
+            # ignore replies from myself to myself
+            if username == SCREEN_NAME:
+                return
+
             body = tce['text']
             link = 'https://twitter.com/' + username + '/status/' + tce['id_str']
-            handle_its_cmd(username, body, link, False)
+            handle_its_cmd(username, body, link, dm=False)
 
 
 def handle_direct_message_events(event):
-    # ignore events for myself
+    # ignore DMs from myself to myself
     if len(event['users']) == 1:
         return
 
@@ -176,7 +214,7 @@ def handle_direct_message_events(event):
                 return
 
             body = dme['message_create']['message_data']['text']
-            handle_its_cmd(username, body, "DM", True)
+            handle_its_cmd(username, body, "DM", dm=True)
 
 
 def handle_account_activity_event(event):
