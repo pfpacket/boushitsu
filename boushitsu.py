@@ -7,7 +7,9 @@ import time
 import datetime
 import twitter
 import paho.mqtt.client as mqtt
+
 import light_sensor
+import access_db
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -85,6 +87,15 @@ def response_its_is_open(username, link, dm):
         post_dm(username, "200 {}".format(is_open))
     else:
         post_update("@{} 200 {} {}".format(username, is_open, link))
+
+
+def response_get_logged_in_members(username, link, dm):
+    # Always send as DMs
+    accounts = access_db.get_logged_in_accounts()
+    if not accounts:
+        post_dm(username, "404 No one logged-in")
+    else:
+        post_dm(username, "200 {}".format(" ".join(accounts)))
 
 
 def response_check_rate_limit(username, link, dm):
