@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import time
+import socket
 import datetime
 import twitter
 import paho.mqtt.client as mqtt
@@ -32,9 +33,11 @@ AUTHORIZED_PERSONNEL = os.environ['AUTHORIZED_PERSONNEL'].split(',')
 
 COMMAND_HELP_TEXT = '''\
 ITS.isOpen(): check if the room is open by using a light sensor
+ITS.getLoggedInMembers(): get logged in members with student IDs
 checkRateLimit(): check the rate limit status for the current endpoint
 ping(): return "pong" to tell you the service is up
 help(): show the available commands and the corresponding usage
+getLocalAddress(): AUTHORIZED PERSONNEL ONLY
 stop(): AUTHORIZED PERSONNEL ONLY
 restart(): AUTHORIZED PERSONNEL ONLY\
 '''
@@ -81,7 +84,7 @@ def post_dm(username, text):
     return status
 
 
-def response_its_is_open(username, link, dm):
+def respond_to_its_is_open(username, link, dm):
     is_open = its_is_open()
     if dm:
         post_dm(username, "200 {}".format(is_open))
@@ -89,16 +92,30 @@ def response_its_is_open(username, link, dm):
         post_update("@{} 200 {} {}".format(username, is_open, link))
 
 
-def response_get_logged_in_members(username, link, dm):
+def respond_to_its_get_logged_in_members(username):
     # Always send as DMs
     accounts = access_db.get_logged_in_accounts()
     if not accounts:
-        post_dm(username, "404 No one logged-in")
+        post_dm(username, "404 No one logged in")
     else:
         post_dm(username, "200 {}".format(" ".join(accounts)))
 
 
-def response_check_rate_limit(username, link, dm):
+def respond_to_ping(username, link, dm):
+    if dm:
+        post_dm(username, "200 pong")
+    else:
+        post_update("@{} 200 pong {}".format(username, link))
+
+
+def respond_to_help(username, link, dm):
+    if dm:
+        post_dm(username, "200 usage:\n" + COMMAND_HELP_TEXT)
+    else:
+        post_update("@{} 200 usage:\n{} {}".format(username, COMMAND_HELP_TEXT, link))
+
+
+def respond_to_check_rate_limit(username, link, dm):
     url = ('https://api.twitter.com/1.1/direct_messages/events/new.json'
             if dm else 'https://api.twitter.com/1.1/statuses/update.json')
     rate_limit = api.CheckRateLimit(url)
@@ -111,28 +128,23 @@ def response_check_rate_limit(username, link, dm):
         post_update("@{} 200 {} {}".format(username, response, link))
 
 
-def response_ping(username, link, dm):
-    if dm:
-        post_dm(username, "200 pong")
-    else:
-        post_update("@{} 200 pong {}".format(username, link))
-
-
-def response_help(username, link, dm):
-    if dm:
-        post_dm(username, "200 usage:\n" + COMMAND_HELP_TEXT)
-    else:
-        post_update("@{} 200 usage:\n{} {}".format(username, COMMAND_HELP_TEXT, link))
-
-
-def response_forbidden(username, link, dm):
+def respond_to_forbidden(username, link, dm):
     if dm:
         post_dm(username, "403 Forbidden")
     else:
         post_update("@{} 403 Forbidden {}".format(username, link))
 
 
-def response_stop(username, link, dm):
+def respond_to_get_local_address(username, link, dm):
+    # Always send as DMs
+    if username in AUTHORIZED_PERSONNEL:
+        local_addr = socket.gethostbyname(socket.gethostname())
+        post_dm(username, "200 {}".format(local_addr))
+    else:
+        respond_to_forbidden(username, link, dm)
+
+
+def respond_to_stop(username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         if dm:
             post_dm(username, "200 Bye (^^)/")
@@ -143,10 +155,10 @@ def response_stop(username, link, dm):
 
         sys.exit(0)
     else:
-        response_forbidden(username, link, dm)
+        respond_to_forbidden(username, link, dm)
 
 
-def response_restart(username, link, dm):
+def respond_to_restart(username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         if dm:
             post_dm(username, "200 Restarting")
@@ -156,45 +168,47 @@ def response_restart(username, link, dm):
 
         os.execv("/usr/bin/env", ["/usr/bin/env", "python3"] + sys.argv)
     else:
-        response_forbidden(username, link, dm)
+        respond_to_forbidden(username, link, dm)
 
 
-def response_unknown_cmd(username, cmd, link, dm):
+def respond_to_unknown_cmd(username, cmd, link, dm):
     print("[!] Bad Request: {}".format(cmd))
     if dm:
-        post_dm(username, "400 Bad Request")
+        post_dm(username, "400 Bad Request, RTFM")
     else:
-        post_update("@{} 400 Bad Request {}".format(username, link))
+        post_update("@{} 400 Bad Request, RTFM {}".format(username, link))
 
 
-def parse_its_cmd(body):
+def parse_command(body):
     body = body.replace('@boushitsu', '').strip()
     comment_pos = body.find("//")
     return body if comment_pos == -1 else body[:comment_pos].strip()
 
 
-def handle_its_cmd(username, body, link, dm):
+def respond_to_command(username, body, link, dm):
     print("[*] Request info: username={} body={} link={}".format(username, body, link))
 
-    cmd = parse_its_cmd(body)
+    cmd = parse_command(body)
     print("[*] Command: {}".format(cmd))
 
     if cmd == "ITS.isOpen()":
-        response_its_is_open(username, link, dm)
-    elif cmd == "getLoggedInMembers()":
-        response_get_logged_in_members(username, link, dm)
-    elif cmd == "checkRateLimit()":
-        response_check_rate_limit(username, link, dm)
+        respond_to_its_is_open(username, link, dm)
+    elif cmd == "ITS.getLoggedInMembers()":
+        respond_to_its_get_logged_in_members(username)
     elif cmd == "ping()":
-        response_ping(username, link, dm)
+        respond_to_ping(username, link, dm)
     elif cmd == "help()":
-        response_help(username, link, dm)
+        respond_to_help(username, link, dm)
+    elif cmd == "checkRateLimit()":
+        respond_to_check_rate_limit(username, link, dm)
+    elif cmd == "getLocalAddress()":
+        respond_to_get_local_address(username, link, dm)
     elif cmd == "stop()":
-        response_stop(username, link, dm)
+        respond_to_stop(username, link, dm)
     elif cmd == "restart()":
-        response_restart(username, link, dm)
+        respond_to_restart(username, link, dm)
     else:
-        response_unknown_cmd(username, cmd, link, dm)
+        respond_to_unknown_cmd(username, cmd, link, dm)
 
 
 def handle_tweet_create_events(event):
@@ -208,7 +222,7 @@ def handle_tweet_create_events(event):
 
             body = tce['text']
             link = 'https://twitter.com/' + username + '/status/' + tce['id_str']
-            handle_its_cmd(username, body, link, dm=False)
+            respond_to_command(username, body, link, dm=False)
 
 
 def handle_direct_message_events(event):
@@ -225,7 +239,7 @@ def handle_direct_message_events(event):
                 return
 
             body = dme['message_create']['message_data']['text']
-            handle_its_cmd(username, body, "DM", dm=True)
+            respond_to_command(username, body, "DM", dm=True)
 
 
 def handle_account_activity_event(event):

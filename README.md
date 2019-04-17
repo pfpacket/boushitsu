@@ -1,7 +1,7 @@
 boushitsu
 =====
 
-A Twitter bot for boushitsu.
+A Twitter bot of boushitsu, by boushitsu, for boushitsu
 
 ## Usage
 1. Setup `.env`
