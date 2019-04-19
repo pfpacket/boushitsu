@@ -65,6 +65,7 @@ def post_update(text):
         status = api.PostUpdate(text)
     except twitter.error.TwitterError as e:
         print("[-] PostUpdate error: {}".format(e))
+        status = None
     else:
         print("[*] Posted update: {}".format(status.text))
     finally:
@@ -77,6 +78,7 @@ def post_dm(username, text):
         status = api.PostDirectMessage(screen_name=username, text=text)
     except twitter.error.TwitterError as e:
         print("[-] PostUpdate error: {}".format(e))
+        status = None
     else:
         print("[*] Posted DM: {}".format(status.text))
     finally:
