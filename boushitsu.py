@@ -185,7 +185,7 @@ def respond_to_unknown_cmd(username, cmd, link, dm):
 
 
 def parse_command(body):
-    body = body.replace('@boushitsu', '').strip()
+    body = body.replace('@' + SCREEN_NAME, '').strip()
     comment_pos = body.find("//")
     return body if comment_pos == -1 else body[:comment_pos].strip()
 
