@@ -30,6 +30,10 @@ def get_logged_in_accounts():
     return [id2account(id) for id in get_logged_in_ids()]
 
 
+def logout_all_members():
+    members_cursor.execute("update members set loggedin = 0");
+
+
 if __name__ == '__main__':
     print(get_logged_in_ids())
     accounts = get_logged_in_accounts()

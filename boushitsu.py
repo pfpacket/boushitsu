@@ -94,8 +94,11 @@ def respond_to_its_is_open(username, link, dm):
         post_update("@{} 200 {} {}".format(username, is_open, link))
 
 
+# Always send as DMs
 def respond_to_its_get_logged_in_members(username):
-    # Always send as DMs
+    if not its_is_open():
+        access_db.logout_all_members()
+
     accounts = access_db.get_logged_in_accounts()
     if not accounts:
         post_dm(username, "404 No one logged in")
@@ -137,8 +140,8 @@ def respond_to_forbidden(username, link, dm):
         post_update("@{} 403 Forbidden {}".format(username, link))
 
 
+# Always send as DMs
 def respond_to_get_local_address(username, link, dm):
-    # Always send as DMs
     if username in AUTHORIZED_PERSONNEL:
         local_addr = socket.gethostbyname(socket.gethostname())
         post_dm(username, "200 {}".format(local_addr))
