@@ -16,18 +16,18 @@ idmap_cursor = idmap_con.cursor()
 
 
 def update_db(student_id):
-    #cursor.execute("CREATE TABLE members (id int unique, loggedin bit)");
+    #cursor.execute("CREATE TABLE members (id INT UNIQUE, loggedin BIT)");
     try:
-        cursor.execute("insert into members (id, loggedin) values (?,?);", (student_id, 1))
+        cursor.execute("INSERT INTO members (id, loggedin) VALUES (?,?);", (student_id, 1))
     except sqlite3.IntegrityError as _:
-        cursor.execute("update members set loggedin = not loggedin where id=:id", {'id': student_id})
+        cursor.execute("UPDATE members SET loggedin = NOT loggedin WHERE id=:id", {'id': student_id})
     con.commit()
-    cursor.execute("select loggedin from members where id=:id", {'id': student_id})
+    cursor.execute("SELECT loggedin FROM members WHERE id=:id", {'id': student_id})
     return cursor.fetchone()[0]
 
 
 def id2account(student_id):
-    idmap_cursor.execute("select account from idmap where id=:id", {'id': student_id})
+    idmap_cursor.execute("SELECT account FROM idmap WHERE id=:id", {'id': student_id})
     account = idmap_cursor.fetchone()
     return (student_id[:4] + "****") if account is None else ("@" + account[0])
 

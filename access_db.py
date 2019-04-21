@@ -16,12 +16,12 @@ idmap_cursor = idmap_con.cursor()
 
 
 def get_logged_in_ids():
-    members_cursor.execute("select id from members where loggedin=1")
+    members_cursor.execute("SELECT id FROM members WHERE loggedin=1")
     return list(map(lambda id: id[0], members_cursor.fetchall()))
 
 
 def id2account(student_id):
-    idmap_cursor.execute("select account from idmap where id=:id", {'id': student_id})
+    idmap_cursor.execute("SELECT account FROM idmap WHERE id=:id", {'id': student_id})
     account = idmap_cursor.fetchone()
     return (student_id[:4] + "****") if account is None else ("@" + account[0])
 
@@ -31,7 +31,7 @@ def get_logged_in_accounts():
 
 
 def logout_all_members():
-    members_cursor.execute("update members set loggedin = 0");
+    members_cursor.execute("UPDATE members SET loggedin = 0");
 
 
 if __name__ == '__main__':
