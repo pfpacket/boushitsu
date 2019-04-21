@@ -33,7 +33,7 @@ AUTHORIZED_PERSONNEL = os.environ['AUTHORIZED_PERSONNEL'].split(',')
 
 COMMAND_HELP_TEXT = '''\
 ITS.isOpen(): check if the room is open by using a light sensor
-ITS.getLoggedInMembers(): get logged in members with student IDs
+ITS.getLoggedInMembers(): get logged in members with student IDs; all the members will automatically get logged out once ITS.isOpen() returns False
 checkRateLimit(): check the rate limit status for the current endpoint
 ping(): return "pong" to tell you the service is up
 help(): show the available commands and the corresponding usage
