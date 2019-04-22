@@ -140,10 +140,16 @@ def respond_to_forbidden(username, link, dm):
         post_update("@{} 403 Forbidden {}".format(username, link))
 
 
+def get_local_address():
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+
+
 # Always send as DMs
 def respond_to_get_local_address(username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
-        local_addr = socket.gethostbyname(socket.gethostname())
+        local_addr = get_local_address()
         post_dm(username, "200 {}".format(local_addr))
     else:
         respond_to_forbidden(username, link, dm)
