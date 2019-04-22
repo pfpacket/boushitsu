@@ -32,6 +32,7 @@ def get_logged_in_accounts():
 
 def logout_all_members():
     members_cursor.execute("UPDATE members SET loggedin = 0");
+    members_con.commit()
 
 
 if __name__ == '__main__':
