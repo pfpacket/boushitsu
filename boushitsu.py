@@ -64,7 +64,7 @@ def post_update(text):
     try:
         status = api.PostUpdate(text)
     except twitter.error.TwitterError as e:
-        print("[-] PostUpdate error: {}".format(e))
+        print("[-] Error: PostUpdate: {}".format(e))
         status = None
     else:
         print("[*] Posted update: {}".format(status.text))
@@ -77,7 +77,7 @@ def post_dm(username, text):
     try:
         status = api.PostDirectMessage(screen_name=username, text=text)
     except twitter.error.TwitterError as e:
-        print("[-] PostUpdate error: {}".format(e))
+        print("[-] Error: PostDirectMessage: {}".format(e))
         status = None
     else:
         print("[*] Posted DM: {}".format(status.text))
@@ -256,7 +256,7 @@ def handle_account_activity_event(event):
 
 
 def on_connect(client, userdata, flags, respons_code):
-    print("[*] Connected to Beebotte: status: {0}".format(respons_code))
+    print("[*] Connected to Beebotte: status: {}".format(respons_code))
     client.subscribe(BEEBOTTE_TOPIC)
 
 
