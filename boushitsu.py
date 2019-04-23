@@ -135,7 +135,7 @@ def respond_to_check_rate_limit(username, link, dm):
         post_update("@{} 200 {} {}".format(username, response, link))
 
 
-def respond_to_forbidden(username, link, dm):
+def post_forbidden(username, link, dm):
     if dm:
         post_dm(username, "403 Forbidden")
     else:
@@ -154,7 +154,7 @@ def respond_to_get_local_address(username, link, dm):
         local_addr = get_local_address()
         post_dm(username, "200 {}".format(local_addr))
     else:
-        respond_to_forbidden(username, link, dm)
+        post_forbidden(username, link, dm)
 
 
 def restart_process():
@@ -179,7 +179,7 @@ def respond_to_update(username, link, dm):
             print("[!] Restart due to a 'update' command")
             restart_process()
     else:
-        respond_to_forbidden(username, None, dm=True)
+        post_forbidden(username, None, dm=True)
 
 
 def respond_to_stop(username, link, dm):
@@ -193,7 +193,7 @@ def respond_to_stop(username, link, dm):
 
         sys.exit(0)
     else:
-        respond_to_forbidden(username, link, dm)
+        post_forbidden(username, link, dm)
 
 
 def respond_to_restart(username, link, dm):
@@ -206,7 +206,7 @@ def respond_to_restart(username, link, dm):
 
         restart_process()
     else:
-        respond_to_forbidden(username, link, dm)
+        post_forbidden(username, link, dm)
 
 
 def respond_to_unknown_cmd(username, cmd, link, dm):
