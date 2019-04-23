@@ -39,6 +39,7 @@ checkRateLimit(): check the rate limit status for the current endpoint
 ping(): return "pong" to tell you the service is up
 help(): show the available commands and the corresponding usage
 getLocalAddress(): AUTHORIZED PERSONNEL ONLY
+update(): AUTHORIZED PERSONNEL ONLY
 stop(): AUTHORIZED PERSONNEL ONLY
 restart(): AUTHORIZED PERSONNEL ONLY\
 '''
