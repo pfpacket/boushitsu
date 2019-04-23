@@ -165,7 +165,8 @@ def respond_to_update(username, link, dm):
         post_dm(username, "200 updating")
 
         print("[*] updating: git pull origin master")
-        proc = subprocess.run(["git", "pull", "origin", "master"], capture_output=True)
+        proc = subprocess.run(["git", "pull", "origin", "master"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print("[*] updated: returncode={}".format(proc.returncode))
         post_dm(username, "return code: {}".format(proc.returncode))
         post_dm(username, "stdout:\n" + proc.stdout.decode("utf8"))
         post_dm(username, "stderr:\n" + proc.stderr.decode("utf8"))
