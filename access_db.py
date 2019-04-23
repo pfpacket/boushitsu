@@ -35,6 +35,10 @@ def logout_all_members():
     members_con.commit()
 
 
+def register_account(student_id, account):
+    return idmap_cursor.execute("INSERT INTO idmap (id, account) VALUES (?,?)", (student_id, account))
+
+
 if __name__ == '__main__':
     print(get_logged_in_ids())
     accounts = get_logged_in_accounts()
