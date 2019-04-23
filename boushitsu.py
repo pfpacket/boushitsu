@@ -5,6 +5,7 @@ import sys
 import json
 import time
 import socket
+import subprocess
 import datetime
 import twitter
 import paho.mqtt.client as mqtt
@@ -155,6 +156,30 @@ def respond_to_get_local_address(username, link, dm):
         respond_to_forbidden(username, link, dm)
 
 
+def restart_process():
+    os.execv("/usr/bin/env", ["/usr/bin/env", "python3"] + sys.argv)
+
+
+def respond_to_update(username, link, dm):
+    if username in AUTHORIZED_PERSONNEL:
+        post_dm(username, "200 updating")
+
+        print("[*] updating: git pull origin master")
+        proc = subprocess.run(["git", "pull", "origin", "master"], capture_output=True)
+        post_dm(username, "return code: {}".format(proc.returncode))
+        post_dm(username, "stdout:\n" + proc.stdout.decode("utf8"))
+        post_dm(username, "stderr:\n" + proc.stderr.decode("utf8"))
+
+        if proc.returncode == 0:
+            post_dm(username, "200 Restarting")
+            post_update("200 Updating [{}] ({}) {}".format(username, datetime.datetime.now(), link))
+
+            print("[!] Restart due to a 'update' command")
+            restart_process()
+    else:
+        respond_to_forbidden(username, None, dm=True)
+
+
 def respond_to_stop(username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         if dm:
@@ -177,7 +202,7 @@ def respond_to_restart(username, link, dm):
         post_update("200 Restarting [{}] ({}) {}".format(username, datetime.datetime.now(), link))
         print("[!] Restart due to a 'restart' command")
 
-        os.execv("/usr/bin/env", ["/usr/bin/env", "python3"] + sys.argv)
+        restart_process()
     else:
         respond_to_forbidden(username, link, dm)
 
@@ -214,6 +239,8 @@ def respond_to_command(username, body, link, dm):
         respond_to_check_rate_limit(username, link, dm)
     elif cmd == "getLocalAddress()":
         respond_to_get_local_address(username, link, dm)
+    elif cmd == "update()":
+        respond_to_update(username, link, dm);
     elif cmd == "stop()":
         respond_to_stop(username, link, dm)
     elif cmd == "restart()":
