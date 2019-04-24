@@ -33,11 +33,11 @@ BEEBOTTE_TOKEN  = os.environ['BEEBOTTE_TOKEN']
 AUTHORIZED_PERSONNEL = os.environ['AUTHORIZED_PERSONNEL'].split(',')
 
 COMMAND_HELP_TEXT = '''\
+help(): show the available commands and the corresponding usage
 ITS.isOpen(): check if the room is open by using a light sensor
 ITS.getLoggedInMembers(): get logged in members with student IDs; all the members will automatically get logged out once ITS.isOpen() returns False
 checkRateLimit(): check the rate limit status for the current endpoint
 ping(): return "pong" to tell you the service is up
-help(): show the available commands and the corresponding usage
 getLocalAddress(): AUTHORIZED PERSONNEL ONLY
 update(): AUTHORIZED PERSONNEL ONLY
 stop(): AUTHORIZED PERSONNEL ONLY
@@ -140,7 +140,7 @@ def get_local_address():
 
 
 # always send as DMs
-def respond_to_get_local_address(username):
+def respond_to_get_local_address(username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         local_addr = get_local_address()
         post_dm("200 {}".format(local_addr), username)
