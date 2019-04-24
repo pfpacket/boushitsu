@@ -166,7 +166,7 @@ def respond_to_update(username, link, dm):
         if proc.returncode == 0:
             if dm:
                 post_dm("200 Restarting", username)
-            post_update("200 Updating [{}] ({}) {}".format(username, datetime.datetime.now(), link))
+            #post_update("200 Updating [{}] ({}) {}".format(username, datetime.datetime.now(), link))
 
             print("[!] Restarting due to an 'update' request")
             restart_process()
