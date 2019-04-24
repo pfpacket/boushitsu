@@ -75,7 +75,7 @@ def post_update(text):
     return status
 
 
-def post_dm(username, text):
+def post_dm(text, username):
     try:
         status = api.PostDirectMessage(screen_name=username, text=text)
     except twitter.error.TwitterError as e:
@@ -91,7 +91,7 @@ def post_dm(username, text):
 # post a message
 # if not dm post a tweet with 'mention' and a link to the request post
 def post_msg(text, username, link=None, dm=True):
-    return post_dm(username, text) if dm else post_update("@{} {} {}", username, text, link)
+    return post_dm(text, username) if dm else post_update("@{} {} {}", username, text, link)
 
 
 def respond_to_its_is_open(username, link, dm):
@@ -126,7 +126,7 @@ def respond_to_check_rate_limit(username, link, dm):
     response = "limit={} ramaining={} reset={}".format(
         rate_limit.limit, rate_limit.remaining, rate_limit.reset)
 
-    post_msg("200 {}" + response, username, link, dm)
+    post_msg("200 " + response, username, link, dm)
 
 
 def post_forbidden(username, link=None, dm=True):
