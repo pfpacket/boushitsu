@@ -33,15 +33,22 @@ BEEBOTTE_TOKEN  = os.environ['BEEBOTTE_TOKEN']
 AUTHORIZED_PERSONNEL = os.environ['AUTHORIZED_PERSONNEL'].split(',')
 
 COMMAND_HELP_TEXT = '''\
-help(): show the available commands and the corresponding usage
-ITS.isOpen(): check if the room is open by using a light sensor
-ITS.getLoggedInMembers(): get logged in members with student IDs; all the members will automatically get logged out once ITS.isOpen() returns False
-checkRateLimit(): check the rate limit status for the current endpoint
-ping(): return "pong" to tell you the service is up
-getLocalAddress(): AUTHORIZED PERSONNEL ONLY
-update(): AUTHORIZED PERSONNEL ONLY
-stop(): AUTHORIZED PERSONNEL ONLY
-restart(): AUTHORIZED PERSONNEL ONLY\
+help: show the available commands and the corresponding usage
+ITS.isOpen: check if the room is open by using a light sensor
+ITS.getLoggedInMembers: get logged in members with student IDs; all the members will automatically get logged out once `ITS.isOpen` returns False
+checkRateLimit: check the rate limit status for the current endpoint
+ping: return "pong" to tell you the service is up
+getLocalAddress: AUTHORIZED PERSONNEL ONLY
+update: AUTHORIZED PERSONNEL ONLY
+stop: AUTHORIZED PERSONNEL ONLY
+restart: AUTHORIZED PERSONNEL ONLY\
+'''
+
+UNKNOWN_CMD_RESPONSE = '''\
+400 Bad Request, RTFM
+Command format: cmd arg1 arg2 ...
+e.g. "ITS.isOpen"
+Type "help" for more details\
 '''
 
 api = twitter.Api(
@@ -50,16 +57,6 @@ api = twitter.Api(
         ACCESS_KEY,
         ACCESS_SECRET,
         sleep_on_rate_limit=True)
-
-
-def its_is_open():
-    def sampling():
-        time.sleep(0.5)
-        return light_sensor.isOpen()
-
-    samples = [sampling() for _ in range(9)]
-    print("[*] Light sensor: {}".format(samples))
-    return samples.count(True) > 4
 
 
 def post_update(text):
@@ -94,13 +91,23 @@ def post_msg(text, username, link=None, dm=True):
     return post_dm(text, username) if dm else post_update("@{} {} {}", username, text, link)
 
 
-def respond_to_its_is_open(username, link, dm):
+def its_is_open():
+    def sampling():
+        time.sleep(0.5)
+        return light_sensor.isOpen()
+
+    samples = [sampling() for _ in range(9)]
+    print("[*] Light sensor: {}".format(samples))
+    return samples.count(True) > 4
+
+
+def respond_to_its_is_open(args, username, link, dm):
     is_open = its_is_open()
     post_msg("200 {}".format(is_open), username, link, dm)
 
 
 # always send as DMs
-def respond_to_its_get_logged_in_members(username):
+def respond_to_its_get_logged_in_members(args, username):
     if not its_is_open():
         access_db.logout_all_members()
 
@@ -111,15 +118,15 @@ def respond_to_its_get_logged_in_members(username):
         post_dm("200 {}".format(" ".join(accounts)), username)
 
 
-def respond_to_ping(username, link, dm):
+def respond_to_ping(args, username, link, dm):
     post_msg("200 pong", username, link=link, dm=dm)
 
 
-def respond_to_help(username, link, dm):
+def respond_to_help(args, username, link, dm):
     post_msg("200 usage:\n" + COMMAND_HELP_TEXT, username, link, dm)
 
 
-def respond_to_check_rate_limit(username, link, dm):
+def respond_to_check_rate_limit(args, username, link, dm):
     url = ("https://api.twitter.com/1.1/direct_messages/events/new.json"
             if dm else "https://api.twitter.com/1.1/statuses/update.json")
     rate_limit = api.CheckRateLimit(url)
@@ -140,7 +147,7 @@ def get_local_address():
 
 
 # always send as DMs
-def respond_to_get_local_address(username, link, dm):
+def respond_to_get_local_address(args, username):
     if username in AUTHORIZED_PERSONNEL:
         local_addr = get_local_address()
         post_dm("200 {}".format(local_addr), username)
@@ -152,7 +159,7 @@ def restart_process():
     os.execv("/usr/bin/env", ["/usr/bin/env", "python3"] + sys.argv)
 
 
-def respond_to_update(username, link, dm):
+def respond_to_update(args, username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         post_msg("200 updating", username, link, dm)
 
@@ -174,7 +181,7 @@ def respond_to_update(username, link, dm):
         post_forbidden(username, link, dm)
 
 
-def respond_to_stop(username, link, dm):
+def respond_to_stop(args, username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         post_msg("200 Bye (^^)/", username, link, dm)
 
@@ -187,7 +194,7 @@ def respond_to_stop(username, link, dm):
         post_forbidden(username, link, dm)
 
 
-def respond_to_restart(username, link, dm):
+def respond_to_restart(args, username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         post_msg("200 Restarting", username, link, dm)
 
@@ -201,39 +208,45 @@ def respond_to_restart(username, link, dm):
 
 def respond_to_unknown_cmd(username, cmd, link, dm):
     print("[!] Bad Request: {}".format(cmd))
-    post_msg("400 Bad Request, RTFM", username, link, dm)
+    post_msg(UNKNOWN_CMD_RESPONSE, username, link, dm)
 
 
-def parse_command(body):
+def parse_request_body(body):
     body = body.replace('@' + SCREEN_NAME, '').strip()
     comment_pos = body.find("//")
     return body if comment_pos == -1 else body[:comment_pos].strip()
 
 
+def parse_command(body):
+    request_body = parse_request_body(body)
+    cmd = request_body.split()
+    return (None if not cmd else cmd[0], cmd[1:])
+
+
 def respond_to_command(body, username, link, dm):
     print("[*] Request info: username={} body={} link={}".format(username, body, link))
 
-    cmd = parse_command(body)
-    print("[*] Command: {}".format(cmd))
+    cmd, args = parse_command(body)
+    print("[*] Command: cmd={} args={}".format(cmd, args))
 
-    if cmd == "help()":
-        respond_to_help(username, link, dm)
-    elif cmd == "ITS.isOpen()":
-        respond_to_its_is_open(username, link, dm)
-    elif cmd == "ITS.getLoggedInMembers()":
-        respond_to_its_get_logged_in_members(username)
-    elif cmd == "ping()":
-        respond_to_ping(username, link, dm)
-    elif cmd == "checkRateLimit()":
-        respond_to_check_rate_limit(username, link, dm)
-    elif cmd == "getLocalAddress()":
-        respond_to_get_local_address(username, link, dm)
-    elif cmd == "update()":
-        respond_to_update(username, link, dm)
-    elif cmd == "stop()":
-        respond_to_stop(username, link, dm)
-    elif cmd == "restart()":
-        respond_to_restart(username, link, dm)
+    if cmd == "help":
+        respond_to_help(args, username, link, dm)
+    elif cmd == "ITS.isOpen":
+        respond_to_its_is_open(args, username, link, dm)
+    elif cmd == "ITS.getLoggedInMembers":
+        respond_to_its_get_logged_in_members(args, username)
+    elif cmd == "ping":
+        respond_to_ping(args, username, link, dm)
+    elif cmd == "checkRateLimit":
+        respond_to_check_rate_limit(args, username, link, dm)
+    elif cmd == "getLocalAddress":
+        respond_to_get_local_address(args, username)
+    elif cmd == "update":
+        respond_to_update(args, username, link, dm)
+    elif cmd == "stop":
+        respond_to_stop(args, username, link, dm)
+    elif cmd == "restart":
+        respond_to_restart(args, username, link, dm)
     else:
         respond_to_unknown_cmd(username, cmd, link, dm)
 
