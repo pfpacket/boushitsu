@@ -9,6 +9,7 @@ import subprocess
 import datetime
 import twitter
 import paho.mqtt.client as mqtt
+import sqlite3
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -34,10 +35,19 @@ AUTHORIZED_PERSONNEL = os.environ['AUTHORIZED_PERSONNEL'].split(',')
 
 COMMAND_HELP_TEXT = '''\
 help: show the available commands and the corresponding usage
+
 ITS.isOpen: check if the room is open by using a light sensor
+
 ITS.getLoggedInMembers: get logged in members with student IDs; all the members will automatically get logged out once `ITS.isOpen` returns False
+
+account.register STUDENT_ID ACCOUNT_NAME: register ACCOUNT_NAME associated with STUDENT_ID
+
+account.showAll: AUTHORIZED PERSONNEL ONLY
+
 checkRateLimit: check the rate limit status for the current endpoint
+
 ping: return "pong" to tell you the service is up
+
 getLocalAddress: AUTHORIZED PERSONNEL ONLY
 update: AUTHORIZED PERSONNEL ONLY
 stop: AUTHORIZED PERSONNEL ONLY
@@ -120,6 +130,35 @@ def respond_to_its_get_logged_in_members(args, username):
 
 def respond_to_ping(args, username, link, dm):
     post_msg("200 pong", username, link=link, dm=dm)
+
+
+def post_wrong_num_of_args(username, link, dm):
+    return post_msg("400 Wrong Number of Arguments", username, link, dm)
+
+
+def respond_to_account_show_all(args, username, link, dm):
+    if username in AUTHORIZED_PERSONNEL:
+        try:
+            accounts = access_db.get_accounts()
+            post_msg("200 {}".format(accounts), username, link, dm)
+        except sqlite3.Error as e:
+            post_msg("500 {}".format(e), username, link, dm)
+    else:
+        post_forbidden(username, link, dm)
+
+
+def respond_to_account_register(args, username, link, dm):
+    if len(args) == 2:
+        student_id = args[0]
+        account = args[1]
+
+        try:
+            access_db.register_account(student_id, account)
+            post_msg("200 OK", username, link, dm)
+        except sqlite3.Error as e:
+            post_msg("500 {}".format(e), username, link, dm)
+    else:
+        post_wrong_num_of_args(username, link, dm)
 
 
 def respond_to_help(args, username, link, dm):
@@ -237,6 +276,10 @@ def respond_to_command(body, username, link, dm):
         respond_to_its_get_logged_in_members(args, username)
     elif cmd == "ping":
         respond_to_ping(args, username, link, dm)
+    elif cmd == "account.register":
+        respond_to_account_register(args, username, link, dm)
+    elif cmd == "account.showAll":
+        respond_to_account_show_all(args, username, link, dm)
     elif cmd == "checkRateLimit":
         respond_to_check_rate_limit(args, username, link, dm)
     elif cmd == "getLocalAddress":
