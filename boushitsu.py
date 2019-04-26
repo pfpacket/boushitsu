@@ -7,9 +7,9 @@ import time
 import socket
 import subprocess
 import datetime
+import sqlite3
 import twitter
 import paho.mqtt.client as mqtt
-import sqlite3
 
 from dotenv import load_dotenv
 load_dotenv()
