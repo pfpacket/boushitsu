@@ -156,9 +156,9 @@ def respond_to_account_register(args, username, link, dm):
 
         try:
             access_db.register_account(student_id, account)
-            post_msg("200 OK", username, link, dm)
+            post_dm("200 OK", username)
         except sqlite3.Error as e:
-            post_msg("500 {}".format(e), username, link, dm)
+            post_dm("500 {}".format(e), username)
     else:
         post_wrong_num_of_args(username, link, dm)
 
@@ -169,9 +169,9 @@ def respond_to_account_unregister(args, username, link, dm):
 
         try:
             access_db.unregister_account(student_id)
-            post_msg("200 OK", username, link, dm)
+            post_dm("200 OK", username)
         except sqlite3.Error as e:
-            post_msg("500 {}".format(e), username, link, dm)
+            post_dm("500 {}".format(e), username)
     else:
         post_wrong_num_of_args(username, link, dm)
 
@@ -180,9 +180,9 @@ def respond_to_account_show_all(args, username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         try:
             accounts = access_db.get_accounts()
-            post_msg("200 {}".format(accounts), username, link, dm)
+            post_dm("200 {}".format(accounts), username)
         except sqlite3.Error as e:
-            post_msg("500 {}".format(e), username, link, dm)
+            post_dm("500 {}".format(e), username)
     else:
         post_forbidden(username, link, dm)
 
