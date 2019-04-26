@@ -44,7 +44,7 @@ account.register STUDENT_ID ACCOUNT_NAME: register ACCOUNT_NAME associated with 
 
 account.unregister STUDENT_ID: AUTHORIZED PERSONNEL ONLY
 
-account.showAll: AUTHORIZED PERSONNEL ONLY
+account.getAll: AUTHORIZED PERSONNEL ONLY
 
 checkRateLimit: check the rate limit status for the current endpoint
 
@@ -178,7 +178,7 @@ def respond_to_account_unregister(args, username, link, dm):
         post_wrong_num_of_args(username, link, dm)
 
 
-def respond_to_account_show_all(args, username, link, dm):
+def respond_to_account_get_all(args, username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         try:
             accounts = access_db.get_accounts()
@@ -310,8 +310,8 @@ def respond_to_command(body, username, link, dm):
         respond_to_account_register(args, username, link, dm)
     elif cmd == "account.unregister":
         respond_to_account_unregister(args, username, link, dm)
-    elif cmd == "account.showAll":
-        respond_to_account_show_all(args, username, link, dm)
+    elif cmd == "account.getAll":
+        respond_to_account_get_all(args, username, link, dm)
     elif cmd == "checkRateLimit":
         respond_to_check_rate_limit(args, username, link, dm)
     elif cmd == "getLocalAddress":
