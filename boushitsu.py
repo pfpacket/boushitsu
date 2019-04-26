@@ -52,6 +52,8 @@ ping: return "pong" to tell you the service is up
 
 getLocalAddress: AUTHORIZED PERSONNEL ONLY
 
+getAddressInfo: AUTHORIZED PERSONNEL ONLY
+
 update: AUTHORIZED PERSONNEL ONLY
 
 stop: AUTHORIZED PERSONNEL ONLY
@@ -212,6 +214,16 @@ def respond_to_get_local_address(args, username):
         post_forbidden(username, dm=True)
 
 
+def respond_to_get_address_info(args, username):
+    if username in AUTHORIZED_PERSONNEL:
+        proc = subprocess.run(["ip", "address", "show"], stdout=subprocess.PIPE)
+        proc_stdout = proc.stdout.decode("utf-8")
+
+        post_dm("200\n{}".format(proc_stdout), username)
+    else:
+        post_forbidden(username, dm=True)
+
+
 def restart_process():
     os.execv("/usr/bin/env", ["/usr/bin/env", "python3"] + sys.argv)
 
@@ -304,6 +316,8 @@ def respond_to_command(body, username, link, dm):
         respond_to_check_rate_limit(args, username, link, dm)
     elif cmd == "getLocalAddress":
         respond_to_get_local_address(args, username)
+    elif cmd == "getAddressInfo":
+        respond_to_get_address_info(args, username)
     elif cmd == "update":
         respond_to_update(args, username, link, dm)
     elif cmd == "stop":
