@@ -36,7 +36,13 @@ def logout_all_members():
 
 
 def register_account(student_id, account):
-    return idmap_cursor.execute("INSERT INTO idmap (id, account) VALUES (?,?)", (student_id, account))
+    idmap_cursor.execute("INSERT INTO idmap (id, account) VALUES (?,?)", (student_id, account))
+    idmap_con.commit()
+
+
+def unregister_account(student_id):
+    idmap_cursor.execute("DELETE FROM idmap WHERE id=:id", {'id': student_id})
+    idmap_con.commit()
 
 
 def get_accounts():

@@ -42,6 +42,8 @@ ITS.getLoggedInMembers: get logged in members with student IDs; all the members 
 
 account.register STUDENT_ID ACCOUNT_NAME: register ACCOUNT_NAME associated with STUDENT_ID
 
+account.unregister STUDENT_ID: AUTHORIZED PERSONNEL ONLY
+
 account.showAll: AUTHORIZED PERSONNEL ONLY
 
 checkRateLimit: check the rate limit status for the current endpoint
@@ -49,8 +51,11 @@ checkRateLimit: check the rate limit status for the current endpoint
 ping: return "pong" to tell you the service is up
 
 getLocalAddress: AUTHORIZED PERSONNEL ONLY
+
 update: AUTHORIZED PERSONNEL ONLY
+
 stop: AUTHORIZED PERSONNEL ONLY
+
 restart: AUTHORIZED PERSONNEL ONLY\
 '''
 
@@ -101,6 +106,18 @@ def post_msg(text, username, link=None, dm=True):
     return post_dm(text, username) if dm else post_update("@{} {} {}", username, text, link)
 
 
+def post_forbidden(username, link=None, dm=True):
+    post_msg("403 Forbidden", username, link, dm)
+
+
+def post_wrong_num_of_args(username, link, dm):
+    return post_msg("400 Wrong Number of Arguments", username, link, dm)
+
+
+def respond_to_help(args, username, link, dm):
+    post_msg("200 usage:\n" + COMMAND_HELP_TEXT, username, link, dm)
+
+
 def its_is_open():
     def sampling():
         time.sleep(0.5)
@@ -132,21 +149,6 @@ def respond_to_ping(args, username, link, dm):
     post_msg("200 pong", username, link=link, dm=dm)
 
 
-def post_wrong_num_of_args(username, link, dm):
-    return post_msg("400 Wrong Number of Arguments", username, link, dm)
-
-
-def respond_to_account_show_all(args, username, link, dm):
-    if username in AUTHORIZED_PERSONNEL:
-        try:
-            accounts = access_db.get_accounts()
-            post_msg("200 {}".format(accounts), username, link, dm)
-        except sqlite3.Error as e:
-            post_msg("500 {}".format(e), username, link, dm)
-    else:
-        post_forbidden(username, link, dm)
-
-
 def respond_to_account_register(args, username, link, dm):
     if len(args) == 2:
         student_id = args[0]
@@ -161,8 +163,28 @@ def respond_to_account_register(args, username, link, dm):
         post_wrong_num_of_args(username, link, dm)
 
 
-def respond_to_help(args, username, link, dm):
-    post_msg("200 usage:\n" + COMMAND_HELP_TEXT, username, link, dm)
+def respond_to_account_unregister(args, username, link, dm):
+    if len(args) == 1:
+        student_id = args[0]
+
+        try:
+            access_db.unregister_account(student_id)
+            post_msg("200 OK", username, link, dm)
+        except sqlite3.Error as e:
+            post_msg("500 {}".format(e), username, link, dm)
+    else:
+        post_wrong_num_of_args(username, link, dm)
+
+
+def respond_to_account_show_all(args, username, link, dm):
+    if username in AUTHORIZED_PERSONNEL:
+        try:
+            accounts = access_db.get_accounts()
+            post_msg("200 {}".format(accounts), username, link, dm)
+        except sqlite3.Error as e:
+            post_msg("500 {}".format(e), username, link, dm)
+    else:
+        post_forbidden(username, link, dm)
 
 
 def respond_to_check_rate_limit(args, username, link, dm):
@@ -173,10 +195,6 @@ def respond_to_check_rate_limit(args, username, link, dm):
         rate_limit.limit, rate_limit.remaining, rate_limit.reset)
 
     post_msg("200 " + response, username, link, dm)
-
-
-def post_forbidden(username, link=None, dm=True):
-    post_msg("403 Forbidden", username, link, dm)
 
 
 def get_local_address():
@@ -278,6 +296,8 @@ def respond_to_command(body, username, link, dm):
         respond_to_ping(args, username, link, dm)
     elif cmd == "account.register":
         respond_to_account_register(args, username, link, dm)
+    elif cmd == "account.unregister":
+        respond_to_account_unregister(args, username, link, dm)
     elif cmd == "account.showAll":
         respond_to_account_show_all(args, username, link, dm)
     elif cmd == "checkRateLimit":
