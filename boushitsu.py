@@ -156,6 +156,10 @@ def respond_to_account_register(args, username, link, dm):
         student_id = args[0]
         account = args[1]
 
+        if len(student_id) != 8:
+            post_msg("400 The Length of a Student ID Must Be 8")
+            return
+
         try:
             access_db.register_account(student_id, account)
             post_dm("200 OK", username)
