@@ -34,6 +34,10 @@ BEEBOTTE_TOKEN  = os.environ['BEEBOTTE_TOKEN']
 AUTHORIZED_PERSONNEL = os.environ['AUTHORIZED_PERSONNEL'].split(',')
 
 COMMAND_HELP_TEXT = '''\
+Command format: cmd arg1 arg2 ...   // comment
+
+Available Commands:
+
 help: show the available commands and the corresponding usage
 
 ITS.isOpen: check if the room is open by using a light sensor
