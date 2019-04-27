@@ -161,7 +161,7 @@ def respond_to_account_register(args, username, link, dm):
         account = args[1]
 
         if len(student_id) != 8:
-            post_msg("400 The Length of a Student ID Must Be 8")
+            post_dm("400 The Length of a Student ID Must Be 8", username)
             return
 
         try:
@@ -170,7 +170,7 @@ def respond_to_account_register(args, username, link, dm):
         except sqlite3.Error as e:
             post_dm("500 {}".format(e), username)
     else:
-        post_wrong_num_of_args(username, link, dm)
+        post_wrong_num_of_args(username, link, dm=True)
 
 
 def respond_to_account_unregister(args, username, link, dm):
