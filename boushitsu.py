@@ -105,7 +105,7 @@ def post_dm(text, username):
 # post a message
 # if not dm post a tweet with 'mention' and a link to the request post
 def post_msg(text, username, link=None, dm=True):
-    return post_dm(text, username) if dm else post_update("@{} {} {}", username, text, link)
+    return post_dm(text, username) if dm else post_update("@{} {} {}".format(username, text, link))
 
 
 def post_forbidden(username, link=None, dm=True):
