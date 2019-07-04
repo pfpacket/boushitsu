@@ -50,9 +50,11 @@ account.unregister STUDENT_ID: AUTHORIZED PERSONNEL ONLY
 
 account.getAll: AUTHORIZED PERSONNEL ONLY
 
+ping: return "pong" to tell you the service is up
+
 checkRateLimit: check the rate limit status for the current endpoint
 
-ping: return "pong" to tell you the service is up
+checkServiceStatus: show the current service status; AUTHORIZED PERSONNEL ONLY
 
 getLocalAddress: AUTHORIZED PERSONNEL ONLY
 
@@ -210,6 +212,26 @@ def respond_to_check_rate_limit(args, username, link, dm):
     post_msg("200 " + response, username, link, dm)
 
 
+def respond_to_check_service_status(args, username, link, dm):
+    if username in AUTHORIZED_PERSONNEL:
+        proc = subprocess.run(["systemctl", "status", "boushitsu"], stdout=subprocess.PIPE)
+        proc_stdout = proc.stdout.decode("utf-8")
+
+        post_dm("200\n{}".format(proc_stdout), username)
+    else:
+        post_forbidden(username, dm=True)
+
+
+def respond_to_bou(args, username, link, dm):
+    if username in AUTHORIZED_PERSONNEL:
+        proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        post_dm("stdout:\n" + proc.stdout.decode("utf8"), username)
+        post_dm("stderr:\n" + proc.stderr.decode("utf8"), username)
+        post_dm("return code: {}".format(proc.returncode), username)
+    else:
+        post_forbidden(username, dm=True)
+
+
 def get_local_address():
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         s.connect(("8.8.8.8", 80))
@@ -325,6 +347,10 @@ def respond_to_command(body, username, link, dm):
         respond_to_account_get_all(args, username, link, dm)
     elif cmd == "checkRateLimit":
         respond_to_check_rate_limit(args, username, link, dm)
+    elif cmd == "checkServiceStatus":
+        respond_to_check_service_status(args, username, link, dm)
+    elif cmd == "bou":
+        respond_to_bou(args, username, link, dm)
     elif cmd == "getLocalAddress":
         respond_to_get_local_address(args, username)
     elif cmd == "getAddressInfo":
