@@ -424,7 +424,7 @@ def setup_beebotte_mqtt():
     client.on_message = on_message
     client.username_pw_set("token:{}".format(BEEBOTTE_TOKEN))
     client.tls_set(BEEBOTTE_CACERT)
-    client.connect(BEEBOTTE_HOST, port=BEEBOTTE_PORT, keepalive=30)
+    client.connect(BEEBOTTE_HOST, port=BEEBOTTE_PORT, keepalive=10)
     return client
 
 
