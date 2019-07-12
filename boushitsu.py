@@ -225,7 +225,8 @@ def respond_to_check_service_status(args, username, link, dm):
 def respond_to_bou(args, username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         post_dm("200 Running", username)
-        proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmdline = " ".join(args) + " &"
+        proc = subprocess.run(cmdline, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         post_dm("stdout:\n" + proc.stdout.decode("utf8"), username)
         post_dm("stderr:\n" + proc.stderr.decode("utf8"), username)
         post_dm("return code: {}".format(proc.returncode), username)
