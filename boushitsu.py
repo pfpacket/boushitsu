@@ -228,8 +228,6 @@ def respond_to_speak_ja(args, username, link, dm):
     post_dm("200 Speaking", username)
     arg = " ".join(args)
     proc = subprocess.run(["speak-ja", arg], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    post_dm("stdout:\n" + proc.stdout.decode("utf8"), username)
-    post_dm("stderr:\n" + proc.stderr.decode("utf8"), username)
     post_dm("return code: {}".format(proc.returncode), username)
 
 
