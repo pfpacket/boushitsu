@@ -40,6 +40,8 @@ Available Commands:
 
 help: show the available commands and the corresponding usage
 
+speakJa: TEXT: speak Japanese text
+
 ITS.isOpen: check if the room is open by using a light sensor
 
 ITS.getLoggedInMembers: get logged in members with student IDs; all the members will automatically get logged out once `ITS.isOpen` returns False
@@ -222,6 +224,15 @@ def respond_to_check_service_status(args, username, link, dm):
         post_forbidden(username, dm=True)
 
 
+def respond_to_speak_ja(args, username, link, dm):
+    post_dm("200 Speaking", username)
+    arg = " ".join(args)
+    proc = subprocess.run(["speak-ja", arg], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    post_dm("stdout:\n" + proc.stdout.decode("utf8"), username)
+    post_dm("stderr:\n" + proc.stderr.decode("utf8"), username)
+    post_dm("return code: {}".format(proc.returncode), username)
+
+
 def respond_to_bou(args, username, link, dm):
     if username in AUTHORIZED_PERSONNEL:
         post_dm("200 Running", username)
@@ -335,6 +346,8 @@ def respond_to_command(body, username, link, dm):
 
     if cmd == "help":
         respond_to_help(args, username, link, dm)
+    elif cmd == "speakJa":
+        respond_to_speak_ja(args, username, link, dm)
     elif cmd == "ITS.isOpen":
         respond_to_its_is_open(args, username, link, dm)
     elif cmd == "ITS.getLoggedInMembers":
