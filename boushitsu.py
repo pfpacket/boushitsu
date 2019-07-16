@@ -40,7 +40,7 @@ Available Commands:
 
 help: show the available commands and the corresponding usage
 
-speakJa: TEXT: speak Japanese text
+speakJa TEXT: speak Japanese text
 
 ITS.isOpen: check if the room is open by using a light sensor
 
@@ -228,7 +228,8 @@ def respond_to_speak_ja(args, username, link, dm):
     post_dm("200 Speaking", username)
     arg = " ".join(args)
     proc = subprocess.run(["speak-ja", arg], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    post_dm("return code: {}".format(proc.returncode), username)
+    if proc.returncode != 0:
+        post_dm("return code: {}".format(proc.returncode), username)
 
 
 def respond_to_bou(args, username, link, dm):
@@ -236,9 +237,8 @@ def respond_to_bou(args, username, link, dm):
         post_dm("200 Running", username)
         cmdline = " ".join(args) + " &"
         proc = subprocess.run(cmdline, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        post_dm("stdout:\n" + proc.stdout.decode("utf8"), username)
-        post_dm("stderr:\n" + proc.stderr.decode("utf8"), username)
-        post_dm("return code: {}".format(proc.returncode), username)
+        post_dm("stdout:\n{}\nstderr:\n{}\nreturn code:{}"
+            .format(proc.stdout.decode("utf8"), proc.stderr.decode("utf8"), proc.returncode), username)
     else:
         post_forbidden(username, dm=True)
 
