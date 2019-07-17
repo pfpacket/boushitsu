@@ -160,35 +160,37 @@ def respond_to_ping(args, username, link, dm):
 
 
 def respond_to_account_register(args, username, link, dm):
-    if len(args) == 2:
-        student_id = args[0]
-        account = args[1]
-
-        if len(student_id) != 8:
-            post_dm("400 The Length of a Student ID Must Be 8", username)
-            return
-
-        try:
-            access_db.register_account(student_id, account)
-            post_dm("200 OK", username)
-        except sqlite3.Error as e:
-            post_dm("500 {}".format(e), username)
-    else:
+    if len(args) != 2:
         post_wrong_num_of_args(username, link, dm=True)
+        return
+
+    student_id = args[0]
+    account = args[1]
+
+    if len(student_id) != 8:
+        post_dm("400 The Length of a Student ID Must Be 8", username)
+        return
+
+    try:
+        access_db.register_account(student_id, account)
+        post_dm("200 OK", username)
+    except sqlite3.Error as e:
+        post_dm("500 {}".format(e), username)
 
 
 def respond_to_account_unregister(args, username, link, dm):
-    if username in AUTHORIZED_PERSONNEL:
-        if len(args) == 1:
-            student_id = args[0]
+    if len(args) != 1:
+        post_wrong_num_of_args(username, link, dm)
+        return
 
-            try:
-                access_db.unregister_account(student_id)
-                post_dm("200 OK", username)
-            except sqlite3.Error as e:
-                post_dm("500 {}".format(e), username)
-        else:
-            post_wrong_num_of_args(username, link, dm)
+    if username in AUTHORIZED_PERSONNEL:
+        student_id = args[0]
+
+        try:
+            access_db.unregister_account(student_id)
+            post_dm("200 OK", username)
+        except sqlite3.Error as e:
+            post_dm("500 {}".format(e), username)
     else:
         post_forbidden(username, link, dm)
 
@@ -225,6 +227,10 @@ def respond_to_check_service_status(args, username, link, dm):
 
 
 def respond_to_speak_ja(args, username, link, dm):
+    if len(args) != 1:
+        post_wrong_num_of_args(username, link, dm)
+        return
+
     post_dm("200 Speaking", username)
     arg = " ".join(args)
     proc = subprocess.run(["speak-ja", arg], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -233,6 +239,10 @@ def respond_to_speak_ja(args, username, link, dm):
 
 
 def respond_to_bou(args, username, link, dm):
+    if len(args) == 0:
+        post_wrong_num_of_args(username, link, dm)
+        return
+
     if username in AUTHORIZED_PERSONNEL:
         post_dm("200 Running", username)
         cmdline = " ".join(args) + " &"
