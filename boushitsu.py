@@ -227,7 +227,7 @@ def respond_to_check_service_status(args, username, link, dm):
 
 
 def respond_to_speak_ja(args, username, link, dm):
-    if len(args) != 1:
+    if len(args) == 0:
         post_wrong_num_of_args(username, link, dm)
         return
 
