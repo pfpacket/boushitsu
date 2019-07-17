@@ -280,7 +280,7 @@ def respond_to_get_address_info(args, username):
 
 def restart_process():
     #os.execv("/usr/bin/env", ["/usr/bin/env", "python3"] + sys.argv)
-    os.execv("/usr/bin/systemctl", ["/usr/bin/systemctl", "restart", "boushitsu"])
+    os.execv("/usr/bin/sudo", ["/usr/bin/sudo", "systemctl", "restart", "boushitsu"])
 
 
 def respond_to_update(args, username, link, dm):
